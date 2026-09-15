@@ -1,51 +1,50 @@
 # Tech Stack — Mission Readiness & Predictive Maintenance Copilot
 
-## Frontend
-| Layer            | Choice                          | Why |
-|-------------------|----------------------------------|-----|
-| Framework         | React (Vite)                    | Fast setup, huge component ecosystem, Bob IDE friendly |
-| Styling           | Tailwind CSS                    | Quick, consistent, avoids custom CSS overhead in a hackathon |
-| Charts            | Recharts or Chart.js            | Sensor trend lines, readiness bar/heatmap |
-| Chat UI           | Custom chat component (or react-chat-ui) | Needed for the Copilot conversation panel |
-| State management  | React Context / Zustand         | Lightweight, no need for Redux at this scale |
+## Frontend Layer
+| Layer | Choice | Purpose / Rationale |
+|---|---|---|
+| **Framework** | React 19 (Vite) | Blazing fast HMR, modern hooks, lightweight footprint, instant UI rendering. |
+| **Icons & UI Elements** | Lucide React | High-tech tactical cyber-defense icons, indicators, and status glyphs. |
+| **Styling** | Cyber-Glassmorphism CSS | High-contrast dark mode military telemetry styling with responsive glassmorphism panels. |
+| **Live Visualizations** | Custom SVG Radial Gauges & Live Stream Charts | Real-time 60 FPS sensor telemetry gauges for vibration, pressure, and temperature. |
+| **Networking & Real-Time** | Native Fetch API + WebSocket API | Persistent bi-directional channel to `ws://localhost:8000/api/ws/telemetry` and REST API endpoints. |
 
-## Backend
-| Layer             | Choice                          | Why |
-|-------------------|----------------------------------|-----|
-| Runtime           | Node.js (Express) **or** Python (FastAPI) | FastAPI preferred if ML models are in Python (avoids cross-language calls) |
-| API style         | REST (JSON)                     | Simple, fast to build, easy for judges to test with Postman |
-| Auth (optional)   | JWT-based simple auth           | Only if hackathon rules require login |
+## Backend & API Layer
+| Layer | Choice | Purpose / Rationale |
+|---|---|---|
+| **Runtime & Framework** | Python 3.11+ / FastAPI | High-performance asynchronous Python web framework with native Pydantic v2 data validation and Swagger/OpenAPI generation. |
+| **Server Engine** | Uvicorn (ASGI) | Lightning-fast async server capable of handling hundreds of concurrent telemetry WebSocket connections. |
+| **API Architecture** | Modular REST + WebSockets | Decoupled routers for Assets (`/api/assets`), Predictions (`/api/predict`), Batch Uploads (`/api/upload-csv`), and Chat (`/api/chat`). |
+| **Concurrency Model** | `asyncio` Background Tasks | Dedicated background telemetry generator task feeding real-time drift and spikes to connected clients. |
 
-## Machine Learning
-| Component               | Model/Tool                       | Purpose |
-|--------------------------|-----------------------------------|---------|
-| Readiness Classification | XGBoost / Random Forest (scikit-learn) | Predicts ready / non-ready label |
-| RUL Prediction            | XGBoost Regressor (or LSTM if time permits) | Predicts days-to-failure |
-| Feature engineering       | pandas, numpy                    | Rolling averages, sensor deltas, service-interval gaps |
-| Model serving             | FastAPI endpoint or joblib-loaded model in same backend | Keep it simple — no separate ML microservice needed for MVP |
+## Machine Learning & AI Inference
+| Component | Model / Technology | Dataset & Purpose |
+|---|---|---|
+| **Rotary & Aviation Transmissions** | Random Forest / Gradient Boosted Regressor (`bearing.pkl`) | **NASA IMS Bearing Dataset:** High-frequency vibration, kurtosis, and peak frequency features for bearing fatigue and RUL prediction. |
+| **Ground Combat Armor & Vehicles** | Ensemble Classifier (`ai4i.pkl`) | **AI4I 2020 Predictive Maintenance Dataset:** Tool wear, process/air temperatures, torque, and rotational speed modeling for heavy armor (Arjun MBT, T-90). |
+| **Turbofan Propulsion Systems** | Degradation Regressor (`failure_model.pkl`) | **NASA N-CMAPSS Turbofan Dataset:** Multichannel sensor degradation sequences estimating remaining cycles/days to failure. |
+| **Explainable AI (XAI)** | Custom Feature Attribution Engine (`ml/explainer.py`) | Computes relative percentage contributions for out-of-spec sensor readings to explain physical root causes. |
+| **Serving & Vectorization** | NumPy, pandas, joblib | High-throughput vectorized matrix calculations enabling 5,000+ batch rows scored in < 1 second. |
 
-## LLM / Agent Layer
-| Component            | Choice                              | Purpose |
-|-----------------------|--------------------------------------|---------|
-| LLM                  | Bob's built-in LLM / Claude / GPT (whichever Bob exposes) | Natural language explanation + recommendation generation |
-| Orchestration         | Simple function-calling / tool-calling pattern | LLM calls your ML prediction endpoint as a "tool", then explains result |
-| Context grounding     | RAG-lite: pass structured JSON (sensor data + prediction + service history) directly into prompt | No need for a vector DB at this scale — data is small & structured |
-| Prompt management     | Plain prompt templates in code (see `llm-architecture.md`) | Keeps it debuggable during demo |
+## Generative AI Copilot & Agent Layer
+| Component | Technology | Purpose |
+|---|---|---|
+| **Primary LLM Engine** | Groq LPU (Llama 3.3 70B Versatile) | Ultra-fast (<300ms) token generation, contextual military reasoning, and autonomous action planning. |
+| **Secondary Fallback LLM** | Google Gemini API (`gemini-1.5-flash`) | Automatic fallback provider when configured in `.env`. |
+| **Air-Gapped / Local RAG** | Deterministic Rule-Based Defense RAG | Fully functional offline reasoning engine for zero-connectivity edge deployments. |
+| **Language Capability** | English & Hinglish (Hindi + English) | Domain-tailored system prompt supporting mixed military maintenance terminology. |
+| **Autonomous Action Dispatch** | Structured Tool Calling (`routes_chat.py`) | Automatically generates and commits formal maintenance Work Orders into the SQLite database. |
 
-## Data
-| Component     | Choice                     | Purpose |
-|-----------------|------------------------------|---------|
-| Dataset         | NASA C-MAPSS (sensor/RUL) + synthetic service-record CSV | Training + demo data |
-| Storage         | SQLite (MVP) or PostgreSQL (if scaling) | Store assets, sensor readings, service records, predictions |
-| File ingestion  | pandas CSV/JSON parser       | For `/upload` screen |
+## Datastore & Persistence
+| Component | Choice | Purpose |
+|---|---|---|
+| **Primary Database** | Embedded SQLite (`data/defense_telemetry.db`) | Zero-configuration, file-based persistence for registered assets, batch runs, and work orders. |
+| **File Storage** | Local Disk Storage (`data/uploads/`, `data/scored_batches/`) | Stores uploaded raw CSV telemetry files and exportable scored outputs. |
+| **Schema Structure** | Tables: `custom_assets`, `telemetry_batches`, `work_orders` | Structured relational tables with JSON columns for flexible time-series telemetry and action plans. |
 
-## DevOps / Deployment
-| Component     | Choice                        | Why |
-|-----------------|---------------------------------|-----|
-| Dev environment | IBM Bob IDE (mandatory per hackathon) | Required for judging/task-session export |
-| Version control | Git (within Bob workspace)     | Standard practice |
-| Deployment (demo)| Local run / Render / Replit (if external hosting allowed) | Only if hackathon permits external deployment for live demo |
-
-## Summary — Minimum Viable Combo
-`React + Tailwind` (frontend) → `FastAPI` (backend) → `scikit-learn/XGBoost` (prediction) → `LLM via Bob` (explanation & chat) → `SQLite` (storage).
-This keeps everything in Python/JS, easy to build solo or in a small team within hackathon time.
+## Development & Operations
+| Component | Choice | Rationale |
+|---|---|---|
+| **Dev Environment** | IBM Bob IDE / Antigravity IDE | Multi-language workspace with seamless background task execution. |
+| **Package Management** | `pip` (Python) + `npm` (Node.js) | Standard, reproducible dependency trees (`requirements.txt`, `package.json`). |
+| **Test Automation** | Custom Python test suites (`test_features.py`, `test_chat.py`, `test_bearing_mapping.py`) | End-to-end integration and sanity verification without heavy third-party runners. |

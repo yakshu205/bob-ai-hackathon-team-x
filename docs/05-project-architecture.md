@@ -2,117 +2,111 @@
 
 ## High-Level Architecture
 ```
-┌────────────────────┐      ┌─────────────────────┐      ┌───────────────────────┐
-│   Frontend (React)  │ ───▶ │   Backend (FastAPI)   │ ───▶ │   ML Models (sklearn)  │
-│  Dashboard / Chat UI│ ◀─── │   REST API + Agent    │ ◀─── │  Classifier + RUL model │
-└────────────────────┘      └──────────┬───────────┘      └───────────────────────┘
-                                        │
-                                        ▼
-                             ┌───────────────────────┐
-                             │   LLM (Bob's model)    │
-                             │  Explanation + Chat     │
-                             └───────────────────────┘
-                                        │
-                                        ▼
-                             ┌───────────────────────┐
-                             │  Database (SQLite/PG)  │
-                             │ assets, sensors, plans  │
-                             └───────────────────────┘
+┌───────────────────────────┐      ┌───────────────────────────┐      ┌───────────────────────────┐
+│     Frontend (React 19)   │ ───▶ │     Backend (FastAPI)     │ ───▶ │     ML Model Registry     │
+│   Dashboard, Gauges, Chat │ ◀─── │  REST Endpoints + WS Hub  │ ◀─── │ IMS Bearing, AI4I, N-CMAP │
+└───────────────────────────┘      └─────────────┬─────────────┘      └───────────────────────────┘
+                                                 │
+                                                 ▼
+                                   ┌───────────────────────────┐
+                                   │  Copilot Reasoner & XAI   │
+                                   │ Groq Llama 3.3 70B / RAG  │
+                                   └─────────────┬─────────────┘
+                                                 │
+                                                 ▼
+                                   ┌───────────────────────────┐
+                                   │  SQLite Telemetry Store   │
+                                   │   assets, batches, orders │
+                                   └───────────────────────────┘
 ```
 
-## Full `src/` Folder Structure
+## Repository & Source Code Layout
 ```
-project-root/
+bob-ai-hackathon-team-x/
 │
-src/
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── Dashboard/
-│   │   │   │   ├── ReadinessSummaryCards.jsx
-│   │   │   │   └── CriticalAlertsList.jsx
-│   │   │   ├── Assets/
-│   │   │   │   ├── AssetTable.jsx
-│   │   │   │   ├── AssetDetail.jsx
-│   │   │   │   └── SensorTrendChart.jsx
-│   │   │   ├── Chat/
-│   │   │   │   ├── ChatWidget.jsx        # floating chat button + panel
-│   │   │   │   ├── ChatWindow.jsx
-│   │   │   │   └── MessageBubble.jsx
-│   │   │   └── MaintenancePlan/
-│   │   │       └── PlanTable.jsx
-│   │   ├── pages/
-│   │   │   ├── DashboardPage.jsx
-│   │   │   ├── AssetsPage.jsx
-│   │   │   ├── AssetDetailPage.jsx
-│   │   │   ├── ChatPage.jsx
-│   │   │   └── MaintenancePlanPage.jsx
-│   │   ├── api/
-│   │   │   └── apiClient.js              # calls backend REST endpoints
-│   │   ├── App.jsx
-│   │   └── main.jsx
-│   ├── package.json
-│   └── vite.config.js
+├── src/
+│   ├── backend/                              # FastAPI Python Backend
+│   │   ├── api/                              # REST and WebSocket route handlers
+│   │   │   ├── routes_assets.py              # /api/assets, /api/metrics, /api/work-orders
+│   │   │   ├── routes_batch.py               # /api/upload-csv, /api/batch-runs
+│   │   │   ├── routes_chat.py                # /api/chat, /api/chat/status, Copilot LLM
+│   │   │   ├── routes_predict.py             # /api/predict/bearing, armor, turbofan
+│   │   │   └── routes_ws.py                  # /api/ws/telemetry (WebSocket generator)
+│   │   ├── ml/                               # Machine Learning & Explainable AI
+│   │   │   ├── ai4i.pkl                      # AI4I 2020 Ground Armor failure model
+│   │   │   ├── bearing.pkl                   # NASA IMS Bearing rotary model
+│   │   │   ├── failure_model.pkl             # NASA N-CMAPSS Turbofan degradation model
+│   │   │   ├── predictor.py                  # Model registry & vectorized batch inference
+│   │   │   └── explainer.py                  # Explainable AI (XAI) feature attributions
+│   │   ├── data/                             # Data and persistent storage
+│   │   │   ├── defense_telemetry.db          # Auto-initialized SQLite database
+│   │   │   ├── uploads/                      # Raw uploaded CSV telemetry batches
+│   │   │   └── scored_batches/               # Exportable scored CSV batches
+│   │   ├── database.py                       # SQLite schema, queries, and seed data
+│   │   ├── main.py                           # FastAPI application entrypoint & CORS
+│   │   ├── requirements.txt                  # Python dependencies manifest
+│   │   ├── .env                              # Active environment configuration
+│   │   ├── test_features.py                  # 5-Feature automated integration test
+│   │   ├── test_chat.py                      # Bilingual Copilot conversation test
+│   │   └── test_bearing_mapping.py           # NASA IMS Bearing mapping verification
+│   │
+│   ├── frontend/                             # React 19 Client (Vite)
+│   │   ├── src/
+│   │   │   ├── components/
+│   │   │   │   ├── Assets/                   # AssetTable, AssetDetail, Gauges
+│   │   │   │   ├── Chat/                     # Copilot Chat drawer & message cards
+│   │   │   │   ├── Dashboard/                # Fleet status KPIs & critical alerts
+│   │   │   │   ├── MaintenancePlan/          # Work order dispatch & scheduling table
+│   │   │   │   └── Navbar.jsx                # Tactical header navigation
+│   │   │   ├── pages/
+│   │   │   │   ├── AssetsPage.jsx
+│   │   │   │   ├── DashboardPage.jsx
+│   │   │   │   └── MaintenancePlanPage.jsx
+│   │   │   ├── App.jsx                       # Main client application shell & tabs
+│   │   │   ├── index.css                     # Cyber-defense dark mode styling
+│   │   │   └── main.jsx                      # React 19 root bootstrap
+│   │   ├── package.json                      # Frontend dependencies & scripts
+│   │   └── vite.config.js                    # Vite bundler configuration
+│   │
+│   ├── .env.example                          # Template environment variables
+│   └── README.md                             # Source directory overview
 │
-├── backend/
-│   ├── src/
-│   │   ├── api/
-│   │   │   ├── routes_assets.py          # /assets, /assets/:id endpoints
-│   │   │   ├── routes_chat.py            # /chat endpoint (agent entrypoint)
-│   │   │   ├── routes_plan.py            # /maintenance-plan endpoint
-│   │   │   └── routes_upload.py          # /upload endpoint
-│   │   ├── ml/
-│   │   │   ├── train_classifier.py       # trains readiness classifier
-│   │   │   ├── train_rul_model.py        # trains RUL regressor
-│   │   │   ├── predict.py                # loads models, runs inference
-│   │   │   └── feature_engineering.py    # rolling stats, sensor deltas
-│   │   ├── agent/
-│   │   │   ├── tools.py                  # tool functions (get_asset_status, predict_rul, etc.)
-│   │   │   ├── prompts.py                # system prompt + templates
-│   │   │   └── agent_runner.py           # orchestrates LLM + tool calls
-│   │   ├── db/
-│   │   │   ├── models.py                 # SQLAlchemy models: Asset, SensorReading, ServiceRecord
-│   │   │   ├── database.py               # DB connection/session setup
-│   │   │   └── seed_data.py              # loads NASA C-MAPSS + synthetic data into DB
-│   │   ├── config.py
-│   │   └── main.py                       # FastAPI app entrypoint
-│   ├── models/                           # saved trained model files (.pkl / .joblib)
-│   │   ├── readiness_classifier.pkl
-│   │   └── rul_regressor.pkl
-│   ├── requirements.txt
-│   └── tests/
-│       ├── test_predict.py
-│       └── test_agent.py
+├── docs/                                     # Comprehensive Project Documentation
+│   ├── 01-wireframe.md                       # Screen-by-screen tactical wireframes
+│   ├── 02-sitemap.md                         # Application routing and user flows
+│   ├── 03-techstack.md                       # Complete technology stack specifications
+│   ├── 04-llm-architecture.md               # Copilot LLM & tool-calling architecture
+│   ├── 05-project-architecture.md           # This document (system design & source map)
+│   ├── architecture.md                       # Formal technical architecture & Mermaid flow
+│   ├── problem-statement.md                  # Defense domain problem statement
+│   ├── solution-overview.md                  # Executive solution summary & capabilities
+│   ├── setup-guide.md                        # Step-by-step local setup and run instructions
+│   └── template-guide.md                     # Hackathon submission guideline reference
 │
-├── data/
-│   ├── raw/                              # original NASA C-MAPSS files
-│   ├── processed/                        # cleaned/feature-engineered CSVs
-│   └── synthetic_service_records.csv     # generated service history data
+├── demo/                                     # Demonstration Artifacts
+│   ├── screenshots/                          # Application screenshots
+│   └── demo-video-link.txt                   # Recorded demonstration video URL
 │
-├── docs/                                 # this set of planning docs
-│   ├── 01-wireframe.md
-│   ├── 02-sitemap.md
-│   ├── 03-techstack.md
-│   ├── 04-llm-architecture.md
-│   └── 05-project-architecture.md
-│
-├── .bob/                                 # Bob IDE workspace config (skills/modes if used)
-├── .gitignore
-└── README.md
+├── presentation/                             # Presentation Deck (slides.pdf / slides.pptx)
+├── submission.yaml                           # Structured evaluation metadata
+├── CONTRIBUTING.md                           # Hackathon rules & instructions
+├── .gitignore                                # Git ignore filters
+└── README.md                                 # Primary repository entrypoint
 ```
 
-## Data Flow (end-to-end)
-1. `data/raw` (NASA C-MAPSS + synthetic service records) → cleaned in `feature_engineering.py`.
-2. `train_classifier.py` + `train_rul_model.py` → produce `.pkl` models in `backend/models/`.
-3. `predict.py` loads these models, exposes predictions via `routes_assets.py`.
-4. `agent/tools.py` wraps these predictions as callable tools for the LLM.
-5. `agent_runner.py` handles a chat message → decides which tool(s) to call → LLM formats
-   the final natural-language + structured response.
-6. Frontend (`ChatWidget.jsx`, `AssetDetail.jsx`) renders the response with text + charts/tables.
+## End-to-End Data Flow
 
-## Build Order (recommended for hackathon time pressure)
-1. Data prep + train the two ML models (offline, in notebooks first).
-2. Backend REST endpoints for assets/predictions (no LLM yet — test with Postman).
-3. Basic frontend: Dashboard + Asset Detail (static-ish, wired to backend).
-4. Add the agent/chat layer on top (tools.py + agent_runner.py).
-5. Polish: maintenance plan view, chat widget, charts.
+1. **Live Telemetry & Anomaly Worker:**
+   - Background worker in `routes_ws.py` streams live sensor readings (vibration, pressure, temperature) via WebSocket to the React frontend.
+   - Operators can inject simulated mechanical spikes to observe real-time gauge changes and Copilot alarm notifications.
+
+2. **Vectorized Multi-Model Batch Scoring:**
+   - Uploaded CSV files flow to `routes_batch.py` and are scored in parallel across thousands of rows via `predictor.py` utilizing `bearing.pkl`, `ai4i.pkl`, and `failure_model.pkl`.
+   - Results are written to SQLite and saved to disk for export.
+
+3. **Explainable AI (XAI) Attribution:**
+   - Telemetry deviations are parsed by `explainer.py` to calculate exact mathematical percentage contributions of anomaly factors, rendering transparent root-cause insights.
+
+4. **Copilot Conversational Intelligence:**
+   - User inputs in English or Hinglish are processed by `routes_chat.py`, contextualized with live asset telemetry, and synthesized via Groq LPU (Llama 3.3 70B) or local defense RAG.
+   - Actionable intents automatically trigger `save_work_order` to create structured work orders in `defense_telemetry.db`.

@@ -1,47 +1,65 @@
-# Source Code
+# Source Code — Mission Readiness & Predictive Maintenance Copilot
 
-Place all your project's source code in this folder.
+This directory contains the complete source code for the platform, divided into a high-performance Python FastAPI backend and a modern React 19 frontend.
 
-## Structure Guidelines
+## Directory Structure
 
-Organize your code logically. Here are common patterns — use whatever fits
-your project:
-
-### Web Application
 ```
 src/
-  backend/        ← API server code
-  frontend/       ← UI code
-  shared/         ← Shared utilities/types
+├── backend/                  # FastAPI Python Backend
+│   ├── api/                  # API routers
+│   │   ├── routes_assets.py  # Fleet overview, asset details, work orders
+│   │   ├── routes_batch.py   # Vectorized CSV batch ingestion & scoring
+│   │   ├── routes_chat.py    # Copilot LLM (Groq LPU / RAG) & tool execution
+│   │   ├── routes_predict.py # Single model prediction endpoints
+│   │   └── routes_ws.py      # Real-time WebSocket telemetry stream
+│   ├── ml/                   # Machine Learning Models & Explainers
+│   │   ├── ai4i.pkl          # AI4I 2020 Ground Armor failure model
+│   │   ├── bearing.pkl       # NASA IMS Bearing rotary model
+│   │   ├── failure_model.pkl # NASA N-CMAPSS Turbofan degradation model
+│   │   ├── predictor.py      # Multi-model registry & batch scoring
+│   │   └── explainer.py      # Explainable AI (XAI) feature attribution
+│   ├── data/                 # SQLite persistence & batch storage
+│   │   ├── defense_telemetry.db
+│   │   ├── uploads/
+│   │   └── scored_batches/
+│   ├── database.py           # SQLite connection, tables, queries
+│   ├── main.py               # FastAPI application entrypoint & CORS
+│   ├── requirements.txt      # Python dependencies
+│   ├── .env                  # Environment configuration
+│   └── test_features.py      # Automated integration test suite
+│
+├── frontend/                 # React 19 Client (Vite)
+│   ├── src/
+│   │   ├── components/       # UI Components
+│   │   │   ├── Assets/       # Asset tables, detail cards, radial gauges
+│   │   │   ├── Chat/         # Copilot conversation drawer & message cards
+│   │   │   ├── Dashboard/    # Readiness summary KPIs & critical alerts
+│   │   │   └── MaintenancePlan/ # Work order dispatch table
+│   │   ├── pages/            # Page-level route views
+│   │   ├── App.jsx           # Root layout & active view controller
+│   │   ├── index.css         # High-contrast cyber-defense dark styling
+│   │   └── main.jsx          # Vite React bootstrap
+│   ├── package.json          # Node dependencies
+│   └── vite.config.js        # Vite bundler configuration
+│
+└── .env.example              # Template environment configuration
 ```
 
-### Data / AI Project
+## Quick Start
+
+### Backend
+```bash
+cd backend
+pip install -r requirements.txt
+python main.py
 ```
-src/
-  data/           ← Data ingestion / preprocessing
-  models/         ← ML model code
-  api/            ← Serving layer
-  notebooks/      ← Jupyter notebooks (exploration)
+*API available at `http://localhost:8000` (Swagger docs at `/docs`)*
+
+### Frontend
+```bash
+cd frontend
+npm install
+npm run dev
 ```
-
-### CLI / Script-based Tool
-```
-src/
-  cli/            ← CLI entry points
-  lib/            ← Core logic
-  utils/          ← Helpers
-```
-
-## Important Files to Include
-
-- `requirements.txt` or `package.json` — dependency manifest
-- `.env.example` — template for environment variables (NEVER commit `.env`)
-- Any database migration files
-- Configuration files
-
-## What NOT to Include in src/
-
-- `.env` files with real secrets
-- Large binary files (use Git LFS or link externally)
-- `node_modules/` or `venv/` (these are in `.gitignore`)
-- Build artifacts (`dist/`, `build/`, `__pycache__/`)
+*UI available at `http://localhost:5173`*
